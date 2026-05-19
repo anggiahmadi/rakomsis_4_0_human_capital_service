@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('leaves', function (Blueprint $table) {
             $table->id();
+            $table->bigInteger('tenant_id')->unsigned()->index();
             $table->bigInteger('work_agreement_id')->unsigned()->index();
             $table->bigInteger('employee_id')->unsigned()->index();
             $table->string('employee_name');
