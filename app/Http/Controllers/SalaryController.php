@@ -66,13 +66,32 @@ class SalaryController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        $data = Salary::findOrFail($id);
+        if ($request->is_permanent_delete) {
+            DB::beginTransaction();
 
-        $data->delete();
+            $data = Salary::withTrashed()->findOrFail($id);
+
+            $data->forceDelete();
+
+            DB::commit();
+        } else {
+            $data = Salary::findOrFail($id);
+
+            $data->delete();
+        }
 
         return $this->successResponse('deleted data is successfull');
+    }
+
+    public function restore($id)
+    {
+        $data = Salary::withTrashed()->findOrFail($id);
+
+        $data->restore();
+
+        return $this->successResponse("Successfully restore data");
     }
 
     public function getData($request)
