@@ -96,8 +96,31 @@ class LeaveController extends Controller
 
     public function datatables(Request $request)
     {
-        $data = $this->getData($request);
+        $query = Leave::query()
+            ->select(
+                'leaves.*',
+                'work_agreements.code as code',
+                DB::raw('leaves.employee_name as name'),
+                DB::raw('leaves.status as status')
+            )
+            ->join('work_agreements', 'work_agreements.id', '=', 'leaves.work_agreement_id')
+            ->where('work_agreements.tenant_id', $request->tenant_id);
 
-        return DataTables::of($data)->toJson();
+        $keyword = $request->input('search.value');
+        if ($keyword) {
+            $query->where(function ($q) use ($keyword) {
+                $q->where('work_agreements.code', 'like', "%{$keyword}%")
+                ->orWhere('leaves.employee_name', 'like', "%{$keyword}%")
+                ->orWhere('leaves.type', 'like', "%{$keyword}%")
+                ->orWhere('leaves.status', 'like', "%{$keyword}%")
+                ->orWhere('leaves.reason', 'like', "%{$keyword}%");
+            });
+        }
+
+        return datatables()->eloquent($query)
+            ->filterColumn('code', fn($q, $k) => $q->where('work_agreements.code', 'like', "%{$k}%"))
+            ->filterColumn('name', fn($q, $k) => $q->where('leaves.employee_name', 'like', "%{$k}%"))
+            ->filterColumn('status', fn($q, $k) => $q->where('leaves.status', 'like', "%{$k}%"))
+            ->toJson();
     }
 }

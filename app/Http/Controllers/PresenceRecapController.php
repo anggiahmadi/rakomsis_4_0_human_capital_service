@@ -110,8 +110,29 @@ class PresenceRecapController extends Controller
 
     public function datatables(Request $request)
     {
-        $data = $this->getData($request);
+        $query = PresenceRecap::query()
+            ->select(
+                'presence_recaps.*',
+                DB::raw('presence_recaps.location_name as name'),
+                DB::raw("CASE WHEN presence_recaps.is_finalized = 1 THEN 'finalized' ELSE 'draft' END as status")
+            )
+            ->where('tenant_id', $request->tenant_id);
 
-        return DataTables::of($data)->toJson();
+        $keyword = $request->input('search.value');
+        if ($keyword) {
+            $query->where(function ($q) use ($keyword) {
+                $q->where('code', 'like', "%{$keyword}%")
+                ->orWhere('location_name', 'like', "%{$keyword}%")
+                ->orWhere('division_name', 'like', "%{$keyword}%");
+            });
+        }
+
+        return datatables()->eloquent($query)
+            ->filterColumn('code', fn($q, $k) => $q->where('code', 'like', "%{$k}%"))
+            ->filterColumn('name', fn($q, $k) => $q->where('location_name', 'like', "%{$k}%"))
+            ->filterColumn('status', fn($q, $k) =>
+                $q->where(DB::raw("CASE WHEN presence_recaps.is_finalized = 1 THEN 'finalized' ELSE 'draft' END"), 'like', "%{$k}%")
+            )
+            ->toJson();
     }
 }
