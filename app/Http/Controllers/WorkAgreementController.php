@@ -15,6 +15,7 @@ class WorkAgreementController extends Controller
     use ApiResponser;
 
     private $table_name = 'work_agreements';
+
     private $prefix_name = 'WAG';
 
     public function __construct()

@@ -26,8 +26,12 @@ class LeaveRequest extends FormRequest
     {
         return [
             'tenant_id' => 'required|integer',
+            'work_agreement_id' => 'required|integer|exists:work_agreements,id',
             'employee_id' => 'required|integer',
-            'leave_type_id' => 'required|integer',
+            'employee_name' => 'required|string|max:255',
+            'year' => 'required|integer|min:2000|max:9999',
+            'duration' => 'required|integer|min:1',
+            'type' => 'required|in:sick,vacation,maternity,paternity,unpaid,other',
             'start_date' => 'required|date_format:Y-m-d',
             'end_date' => 'required|date_format:Y-m-d|after_or_equal:start_date',
             'reason' => 'nullable|string|max:255',

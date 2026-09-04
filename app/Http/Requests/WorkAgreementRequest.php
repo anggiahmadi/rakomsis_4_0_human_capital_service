@@ -56,8 +56,10 @@ class WorkAgreementRequest extends FormRequest
         return $workAgreement;
     }
 
-    public function update(WorkAgreement $workAgreement)
+    public function update($id)
     {
+        $workAgreement = WorkAgreement::findOrFail($id);
+
         $this->validate([
             'code' => 'required|string|max:255|unique:work_agreements,code,' . $workAgreement->id . ',id,tenant_id,' . $this->tenant_id,
         ]);

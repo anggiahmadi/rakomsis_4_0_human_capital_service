@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Leave extends Model
 {
     protected $fillable = [
+        'tenant_id',
         'work_agreement_id',
         'employee_id',
         'employee_name',
