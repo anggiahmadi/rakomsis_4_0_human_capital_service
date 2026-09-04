@@ -140,8 +140,33 @@ class WorkAgreementController extends Controller
 
     public function datatables(Request $request)
     {
-        $data = $this->getData($request);
+        $query = WorkAgreement::query()
+            ->select(
+                'work_agreements.*',
+                DB::raw('work_agreements.employee_name as name'),
+                DB::raw("CASE WHEN work_agreements.is_active = 1 THEN 'active' ELSE 'inactive' END as status")
+            )
+            ->where('tenant_id', $request->tenant_id);
 
-        return DataTables::of($data)->toJson();
+        if ($request->data_type == 'softdelete') $query->onlyTrashed();
+
+        $keyword = $request->input('search.value');
+        if ($keyword) {
+            $query->where(function ($q) use ($keyword) {
+                $q->where('work_agreements.code', 'like', "%{$keyword}%")
+                ->orWhere('work_agreements.employee_name', 'like', "%{$keyword}%")
+                ->orWhere('work_agreements.position', 'like', "%{$keyword}%")
+                ->orWhere('work_agreements.location_name', 'like', "%{$keyword}%")
+                ->orWhere('work_agreements.division_name', 'like', "%{$keyword}%");
+            });
+        }
+
+        return datatables()->eloquent($query)
+            ->filterColumn('code', fn($q, $k) => $q->where('work_agreements.code', 'like', "%{$k}%"))
+            ->filterColumn('name', fn($q, $k) => $q->where('work_agreements.employee_name', 'like', "%{$k}%"))
+            ->filterColumn('status', fn($q, $k) =>
+                $q->where(DB::raw("CASE WHEN work_agreements.is_active = 1 THEN 'active' ELSE 'inactive' END"), 'like', "%{$k}%")
+            )
+            ->toJson();
     }
 }

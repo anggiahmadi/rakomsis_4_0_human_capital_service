@@ -7,6 +7,7 @@ use App\Models\Payroll;
 use App\Traits\ApiResponser;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -96,9 +97,29 @@ class PayrollController extends Controller
 
     public function datatables(Request $request)
     {
-        $data = $this->getData($request);
+        $query = Payroll::query()
+            ->select(
+                'payrolls.*',
+                DB::raw('payrolls.employee_name as name'),
+                DB::raw('payrolls.status as status')
+            )
+            ->where('tenant_id', $request->tenant_id);
 
-        return DataTables::of($data)->toJson();
+        $keyword = $request->input('search.value');
+        if ($keyword) {
+            $query->where(function ($q) use ($keyword) {
+                $q->where('employee_name', 'like', "%{$keyword}%")
+                ->orWhere('status', 'like', "%{$keyword}%")
+                ->orWhere('location_name', 'like', "%{$keyword}%")
+                ->orWhere('division_name', 'like', "%{$keyword}%")
+                ->orWhere('payroll_date', 'like', "%{$keyword}%");
+            });
+        }
+
+        return datatables()->eloquent($query)
+            ->filterColumn('name', fn($q, $k) => $q->where('employee_name', 'like', "%{$k}%"))
+            ->filterColumn('status', fn($q, $k) => $q->where('status', 'like', "%{$k}%"))
+            ->toJson();
     }
 
     public function generate(Request $request)

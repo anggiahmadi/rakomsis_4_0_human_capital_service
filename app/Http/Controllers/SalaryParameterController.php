@@ -96,8 +96,28 @@ class SalaryParameterController extends Controller
 
     public function datatables(Request $request)
     {
-        $data = $this->getData($request);
+        $query = SalaryParameter::query()
+            ->select(
+                'salary_parameters.*',
+                DB::raw('salary_parameters.name as name'),
+                DB::raw('salary_parameters.type as status')
+            )
+            ->where('tenant_id', $request->tenant_id);
 
-        return DataTables::of($data)->toJson();
+        $keyword = $request->input('search.value');
+        if ($keyword) {
+            $query->where(function ($q) use ($keyword) {
+                $q->where('name', 'like', "%{$keyword}%")
+                ->orWhere('type', 'like', "%{$keyword}%")
+                ->orWhere('allotment', 'like', "%{$keyword}%")
+                ->orWhere('location_name', 'like', "%{$keyword}%")
+                ->orWhere('division_name', 'like', "%{$keyword}%");
+            });
+        }
+
+        return datatables()->eloquent($query)
+            ->filterColumn('name', fn($q, $k) => $q->where('name', 'like', "%{$k}%"))
+            ->filterColumn('status', fn($q, $k) => $q->where('type', 'like', "%{$k}%"))
+            ->toJson();
     }
 }
